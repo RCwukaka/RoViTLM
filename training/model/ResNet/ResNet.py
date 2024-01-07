@@ -7,7 +7,7 @@ class ResNet(nn.Module):
     def __init__(self,
                  block,
                  blocks_num,
-                 num_classes=13,
+                 num_classes,
                  include_top=True):
         super(ResNet, self).__init__()
         self.include_top = include_top
@@ -57,7 +57,7 @@ class ResNet(nn.Module):
 
     # 正向传播过程
     def forward(self, x):
-        x = self.conv1(x)  # 7×7卷积层
+        x = self.conv1(x)  # 8×8卷积层
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)  # 3×3 max pool

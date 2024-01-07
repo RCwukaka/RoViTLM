@@ -35,10 +35,10 @@ class Trainer:
             device: torch.device = torch.device('cuda'),
     ) -> None:
         ### Some hyperparameters for you to fiddle with
-        self.model_name = "net"
         self.initial_lr = 1e-2
         self.num_epochs = 1000
-        self.lamda = 1
+        self.lamda = lamda
+        self.model_name = model_name
 
         self.current_epoch = 0
         self.train_outputs = {}
@@ -80,9 +80,9 @@ class Trainer:
         self.print_to_log_file(
             f"train_loss: {np.round(self.logger.my_fantastic_logging['train_loss'][-1], decimals=4)} "
             f"train_accuracy: {np.round(self.logger.my_fantastic_logging['train_accuracy'][-1], decimals=4)} ")
-        self.print_to_log_file(
-            f"val_loss: {np.round(self.logger.my_fantastic_logging['val_loss'][-1], decimals=4)} "
-            f"val_accuracy: {np.round(self.logger.my_fantastic_logging['val_accuracy'][-1], decimals=4)} ")
+        # self.print_to_log_file(
+        #     f"target_loss: {np.round(self.logger.my_fantastic_logging['target_loss'][-1], decimals=4)} "
+        #     f"target_accuracy: {np.round(self.logger.my_fantastic_logging['target_accuracy'][-1], decimals=4)} ")
         self.print_to_log_file(
             f"Epoch time: {np.round(self.logger.my_fantastic_logging['epoch_end_timestamps'][-1] - self.logger.my_fantastic_logging['epoch_start_timestamps'][-1], decimals=2)} s")
 
@@ -94,13 +94,13 @@ class Trainer:
         empty_cache(self.device)
         self.print_to_log_file("Training done.")
 
+
     def on_train_epoch_start(self):
         self.lr_scheduler.step(self.current_epoch)
         self.print_to_log_file('')
         self.print_to_log_file(f'Epoch {self.current_epoch + 1}/{self.num_epochs}')
         self.print_to_log_file(
             f"Current learning rate: {np.round(self.optimizer.param_groups[0]['lr'], decimals=5)}")
-        # lrs are the same for all workers so we don't need to gather them in case of DDP training
         self.logger.log('lrs', self.optimizer.param_groups[0]['lr'], self.current_epoch)
 
     def on_train_epoch_end(self, train_outputs: List[dict]):
@@ -126,28 +126,28 @@ class Trainer:
         if self.current_epoch > int(self.num_epochs / 2) and self.current_epoch % 3 == 0:
             self.savePoint()
 
-    def on_validation_epoch_start(self):
+    def on_target_epoch_start(self):
         return
 
-    def on_validation_epoch_end(self, val_outputs: List[dict]):
-        outputs = collate_outputs(val_outputs)
+    def on_target_epoch_end(self, target_outputs: List[dict]):
+        outputs = collate_outputs(target_outputs)
 
         if self.is_ddp:
             val_tr = [None for _ in range(dist.get_world_size())]
             dist.all_gather_object(val_tr, outputs)
-            val_loss = []
-            val_accuracy = []
+            target_loss = []
+            target_accuracy = []
             for _ in val_tr:
-                val_loss = np.append(val_loss, _['val_loss'])
-                val_accuracy = np.append(val_accuracy, _['val_accuracy'])
-            val_loss_here = val_loss.mean()
-            val_accuracy_here = val_accuracy.mean()
+                target_loss = np.append(target_loss, _['target_loss'])
+                target_accuracy = np.append(target_accuracy, _['target_accuracy'])
+            target_loss_here = target_loss.mean()
+            target_accuracy_here = target_accuracy.mean()
         else:
-            val_loss_here = np.mean(outputs['val_loss'])
-            val_accuracy_here = np.mean(outputs['val_accuracy'])
+            target_loss_here = np.mean(outputs['target_loss'])
+            target_accuracy_here = np.mean(outputs['target_accuracy'])
 
-        self.logger.log('val_loss', val_loss_here, self.current_epoch)
-        self.logger.log('val_accuracy', val_accuracy_here, self.current_epoch)
+        self.logger.log('target_loss', target_loss_here, self.current_epoch)
+        self.logger.log('target_accuracy', target_accuracy_here, self.current_epoch)
 
     def print_to_log_file(self, *args, also_print_to_console=True, add_timestamp=True):
         if self.local_rank == 0:
@@ -160,18 +160,18 @@ class Trainer:
             successful = False
             max_attempts = 5
             ctr = 0
-            while not successful and ctr < max_attempts:
-                try:
-                    with open(self.log_file, 'a+') as f:
-                        for a in args:
-                            f.write(str(a))
-                            f.write(" ")
-                        f.write("\n")
-                    successful = True
-                except IOError:
-                    print(f"{datetime.fromtimestamp(timestamp)}: failed to log: ", sys.exc_info())
-                    sleep(0.5)
-                    ctr += 1
+            # while not successful and ctr < max_attempts:
+            #     try:
+            #         with open(self.log_file, 'a+') as f:
+            #             for a in args:
+            #                 f.write(str(a))
+            #                 f.write(" ")
+            #             f.write("\n")
+            #         successful = True
+            #     except IOError:
+            #         print(f"{datetime.fromtimestamp(timestamp)}: failed to log: ", sys.exc_info())
+            #         sleep(0.5)
+            #         ctr += 1
             if also_print_to_console:
                 print(*args)
         elif also_print_to_console:
@@ -194,42 +194,31 @@ class Trainer:
         loop = tqdm(total=len(self.source_data), file=sys.stdout)
         for sources, targets in zip(self.source_data, self.target_data):
             loop.update(1)
-            sources = sources.to(self.gpu_id)
-            targets = targets.to(self.gpu_id)
-            train_outputs.append(self._run_batch(sources, targets))
+            sources_X1 = sources[0].to(self.gpu_id)
+            sources_X2 = sources[1].to(self.gpu_id)
+            sources_label = sources[2].to(self.gpu_id)
+            targets_X1 = targets[0].to(self.gpu_id)
+            targets_X2 = targets[1].to(self.gpu_id)
+            targets_label = targets[2].to(self.gpu_id)
+            train_outputs.append(self._run_batch(sources_X1.float(), sources_X2.float(),
+                                                 sources_label.float(), targets_X1.float(),
+                                                 targets_X2.float(), targets_label.float()))
         loop.close()
         return train_outputs
 
-    def validation_step(self):
-        self.target_data.sampler.set_epoch(self.current_epoch)
-        self.model.eval()
-        with torch.no_grad():
-            val_outputs = []
-            for source1, source2, label in self.target_data:
-                source1 = source1.to(self.gpu_id)
-                source2 = source2.to(self.gpu_id)
-                label = label.to(self.gpu_id)
-                class_output, domain_output = self.model(source1.float(), source2.float())
-                predicted = torch.argmax(class_output, 1)
-                accuracy = (predicted == torch.argmax(label, 1)).sum().item()
-                del source1, source2
-                l = self.loss(class_output, domain_output, label.float(),
-                              domain_label=np.tile([1., 0.], [len(label), 1]))
-                val_outputs.append(
-                    {'val_loss': l.detach().cpu().numpy(), 'val_accuracy': accuracy / class_output.size(0)})
-            return val_outputs
-
-    def _run_batch(self, sources, targets):
-        batch_size = len(sources[0])
+    def _run_batch(self, sources_X1, sources_X2, sources_label, targets_X1, targets_X2, targets_label):
+        batch_size = len(sources_X1)
         self.optimizer.zero_grad(set_to_none=True)
         with autocast(self.device.type, enabled=True) if self.device.type == 'cuda' else dummy_context():
             source_output, source_feature, \
-            target_feature, domain_output = self.model(sources[0], sources[1], targets[0], targets[1])
-            l = self.loss(source_output, sources[2], source_feature,
-                          target_feature, domain_output, domain_label=np.tile([0., 1.], batch_size, self.lamda))
-            predicted = torch.argmax(source_output, 1)
-            accuracy = (predicted == torch.argmax(sources[2], 1)).sum().item()
-            del sources, targets
+            target_output, target_feature, \
+            source_domain_output, target_domain_output = self.model(sources_X1, sources_X2, targets_X1, targets_X2)
+            l = self.loss(source_output, sources_label, source_feature,
+                          target_feature, source_domain_output, target_domain_output,
+                          lamda=self.lamda)
+            predicted = torch.argmax(target_output, 1)
+            accuracy = (predicted == torch.argmax(targets_label, 1)).sum().item()
+            del sources_X1, sources_X2, sources_label, targets_X1, targets_X2, targets_label
 
         if self.grad_scaler is not None:
             self.grad_scaler.scale(l).backward()
@@ -244,6 +233,25 @@ class Trainer:
 
         return {'train_loss': l.detach().cpu().numpy(), 'train_accuracy': accuracy / batch_size}
 
+    def target_step(self):
+        self.target_data.sampler.set_epoch(self.current_epoch)
+        self.model.eval()
+        with torch.no_grad():
+            target_outputs = []
+            for source1, source2, label in self.target_data:
+                source1 = source1.to(self.gpu_id)
+                source2 = source2.to(self.gpu_id)
+                label = label.to(self.gpu_id)
+                class_output, domain_output = self.model(source1.float(), source2.float())
+                predicted = torch.argmax(class_output, 1)
+                accuracy = (predicted == torch.argmax(label, 1)).sum().item()
+                del source1, source2
+                l = self.loss(class_output, domain_output, label.float(),
+                              domain_label=np.tile([1., 0.], [len(label), 1]))
+                target_outputs.append(
+                    {'target_loss': l.detach().cpu().numpy(), 'target_accuracy': accuracy / class_output.size(0)})
+            return target_outputs
+
     def train(self, max_epochs: int):
         self.on_train_start()
         self.num_epochs = max_epochs
@@ -254,13 +262,11 @@ class Trainer:
             train_outputs = self.train_step()
             self.on_train_epoch_end(train_outputs)
 
-            # with torch.no_grad():
-            #     self.on_validation_epoch_start()
-            #     val_outputs = self.validation_step()
-            #     self.on_validation_epoch_end(val_outputs)
+            # self.on_target_epoch_start()
+            # target_outputs = self.target_step()
+            # self.on_target_epoch_end(target_outputs)
 
             self.on_epoch_end()
-            # if checkpoint then resume
             if self.current_epoch + 1 >= max_epochs:
                 break
         self.on_train_end()

@@ -1,20 +1,9 @@
 import torch
 import torch.nn as nn
 
-class MMDLoss(nn.Module):
-    '''
-    计算源域数据和目标域数据的MMD距离
-    Params:
-    source: 源域数据（n * len(x))
-    target: 目标域数据（m * len(y))
-    kernel_mul:
-    kernel_num: 取不同高斯核的数量
-    fix_sigma: 不同高斯核的sigma值
-    Return:
-    loss: MMD loss
-    '''
+class MK_MMDLoss(nn.Module):
     def __init__(self, kernel_type='rbf', kernel_mul=2.0, kernel_num=5, fix_sigma=None, **kwargs):
-        super(MMDLoss, self).__init__()
+        super(MK_MMDLoss, self).__init__()
         self.kernel_num = kernel_num
         self.kernel_mul = kernel_mul
         self.fix_sigma = None
@@ -52,9 +41,11 @@ class MMDLoss(nn.Module):
             batch_size = int(source.size()[0])
             kernels = self.guassian_kernel(
                 source, target, kernel_mul=self.kernel_mul, kernel_num=self.kernel_num, fix_sigma=self.fix_sigma)
-            XX = torch.mean(kernels[:batch_size, :batch_size])
-            YY = torch.mean(kernels[batch_size:, batch_size:])
-            XY = torch.mean(kernels[:batch_size, batch_size:])
-            YX = torch.mean(kernels[batch_size:, :batch_size])
-            loss = torch.mean(XX + YY - XY - YX)
-            return loss
+            loss = 0
+            for i in range(batch_size):
+                s1, s2 = i, (i + 1) % batch_size
+                t1, t2 = s1 + batch_size, s2 + batch_size
+                loss += kernels[s1, s2] + kernels[t1, t2]
+                loss -= kernels[s1, t2] + kernels[s2, t1]
+            n_loss = loss / float(batch_size)
+            return torch.mean(n_loss)

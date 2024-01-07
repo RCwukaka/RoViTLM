@@ -1,24 +1,21 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from INet.training.loss.MMDLoss import MMDLoss
+from INet.training.loss.MK_MMDLoss import MK_MMDLoss
+from INet.training.loss.DomainLoss import DomainLoss
+from INet.training.loss.FaultLoss import FaultLoss
 
 
 class LRSADTLMLoss(nn.Module):
-    def __init__(self, source_output, source_label, source_feature,
-                 target_feature, domain_output, domain_label, lamda, **kwargs):
+    def __init__(self):
         super(LRSADTLMLoss, self).__init__()
-        self.source_output = source_output
-        self.source_feature = source_feature
-        self.target_feature = target_feature
-        self.domain_output = domain_output
-        self.domain_label = domain_label
-        self.source_label = source_label
-        self.lamda = lamda
+        self.faultLoss = FaultLoss()
+        self.domainLoss = DomainLoss()
+        self.mmdLoss = MK_MMDLoss()
 
     def forward(self, source_output, source_label, source_feature,
-                target_feature, domain_output, domain_label, lamda):
-        class_loss = F.cross_entropy(source_output, source_label)
-        mmd_loss = MMDLoss(source_feature, target_feature)
-        domain_loss = F.binary_cross_entropy(domain_output, domain_label)
-        return mmd_loss + class_loss + lamda * domain_loss
+                target_feature, source_domain_output, target_domain_output, lamda):
+        class_loss = self.faultLoss(source_output, source_label)
+        mmd_loss = self.mmdLoss(source_feature, target_feature)
+        domain_loss = self.domainLoss(source_domain_output, target_domain_output)
+        return mmd_loss - lamda * domain_loss + class_loss

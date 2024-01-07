@@ -15,10 +15,10 @@ class NetLogger(object):
     def __init__(self, verbose: bool = False):
         self.my_fantastic_logging = {
             'train_accuracy': list(),
-            'val_accuracy': list(),
+            'target_accuracy': list(),
             'dice_per_class_or_region': list(),
             'train_loss': list(),
-            'val_loss': list(),
+            'target_loss': list(),
             'lrs': list(),
             'epoch_start_timestamps': list(),
             'epoch_end_timestamps': list()
@@ -52,7 +52,7 @@ class NetLogger(object):
         ax = ax_all[0]
         x_values = list(range(epoch + 1))
         ax.plot(x_values, self.my_fantastic_logging['train_losses'][:epoch + 1], color='b', ls='-', label="loss_tr", linewidth=4)
-        ax.plot(x_values, self.my_fantastic_logging['val_losses'][:epoch + 1], color='r', ls='-', label="loss_val", linewidth=4)
+        ax.plot(x_values, self.my_fantastic_logging['target_losses'][:epoch + 1], color='r', ls='-', label="loss_target", linewidth=4)
         ax.set_xlabel("epoch")
         ax.set_ylabel("loss")
 

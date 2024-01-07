@@ -4,10 +4,10 @@ import sys
 import torch.cuda
 import torch.distributed as dist
 import torch.multiprocessing as mp
-import torch.utils.data as Data
 
 from INet.training.loss.LRSADTLMLoss import LRSADTLMLoss
 from INet.training.model.LRSADTLM.LRSADTLM import LRSADTLM
+from data.TYUTDataSet import datasetInfo
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from torch.utils.data import Dataset, DataLoader
@@ -30,25 +30,17 @@ def cleanup_ddp():
     dist.destroy_process_group()
 
 
-def run_ddp(rank, world_size, total_epochs, batch_size, test_size, model_name, device):
+def run_ddp(rank, world_size, total_epochs, batch_size, model_name, lamda, device):
     setup_ddp(rank, world_size)
 
     # run model
     source, target, model, optimizer, loss = load_train_objs()
-    # train_dataset, test_dataset = split_dataset(data, test_size)
     source_data = prepare_dataloader(source, batch_size)
     target_data = prepare_dataloader(target, batch_size)
-    trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, model_name, device)
+    trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, model_name, lamda, device)
     trainer.train(total_epochs)
 
     cleanup_ddp()
-
-
-# def split_dataset(data: Dataset, test_size: int):
-#     test_size = int(len(data) * test_size)
-#     train_size = len(data) - test_size
-#     train_dataset, test_dataset = torch.utils.data.random_split(data, [train_size, test_size])
-#     return train_dataset, test_dataset
 
 
 def prepare_dataloader(dataset: Dataset, batch_size: int):
@@ -60,19 +52,26 @@ def prepare_dataloader(dataset: Dataset, batch_size: int):
         sampler=DistributedSampler(dataset)  # 这个 sampler 自动将数据分块后送个各个 GPU，它能避免数据重叠
     )
 
+def datasetReset(source, target):
+    if len(source) > len(target):
+        source.remove(len(target))
+    else:
+        target.remove(len(source))
 
 def load_train_objs():
-    source = TYUTDataset()  # load your datasets
-    target = TYUTDataset()  # load your datasets
+    source = TYUTDataset(mapdata=datasetInfo.map_single_600)
+    target = TYUTDataset(mapdata=datasetInfo.map_single_900)
+
+    datasetReset(source, target)
     model = LRSADTLM()  # load your model
-    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
     loss = LRSADTLMLoss()
     return source, target, model, optimizer, loss
 
 
-def run_training(world_size, batch_size, total_epochs, test_size, model_name, device):
+def run_training(world_size, batch_size, total_epochs, model_name, lamda, device):
     mp.spawn(run_ddp,
-             args=(world_size, total_epochs, batch_size, test_size, model_name, device),
+             args=(world_size, total_epochs, batch_size, model_name, lamda, device),
              nprocs=world_size,
              join=True)
 
@@ -86,8 +85,8 @@ def run_training_entry():
                         help='[OPTIONAL] Use this flag to specify the number of GPU. Default: 1')
     parser.add_argument('--batch_size', type=int, required=False, default=32,
                         help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 32')
-    parser.add_argument('--test_size', type=int, required=False, default=0.2,
-                        help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 0.2')
+    parser.add_argument('--lamda', type=int, required=False, default=1,
+                        help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 1')
     parser.add_argument('-device', type=str, default='cuda', required=False)
     args = parser.parse_args()
 
@@ -108,8 +107,8 @@ def run_training_entry():
     run_training(world_size=args.world_size,
                  batch_size=args.batch_size,
                  total_epochs=args.total_epochs,
-                 test_size=args.test_size,
                  model_name="net",
+                 lamda=args.lamda,
                  device=device)
 
 

@@ -55,7 +55,7 @@ class ResidualAdd(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, emb_size, num_heads=2, dropout: float = 0.2):
+    def __init__(self, emb_size, num_heads=1, dropout: float = 0.2):
         super().__init__()
         self.emb_size = emb_size
         self.num_heads = num_heads
