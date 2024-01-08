@@ -22,12 +22,12 @@ class GRL(Function):
 
 
 class LRSADTLM(nn.Module):
-    def __init__(self):
+    def __init__(self, net1=LightweightNet(), net2=ViT(), num_class=11):
         super(LRSADTLM, self).__init__()
-        self.layerResNet = LightweightNet()
-        self.SAMNet = ViT(num_classes=256)
+        self.layerResNet = net1
+        self.SAMNet = net2
         self.grl = GRL()
-        self.class_classifier = FaultClassifier()
+        self.class_classifier = FaultClassifier(out_channel=num_class)
         self.domain_classifier = DomainClassifier()
         self.fc = nn.Sequential(
             nn.Linear(512, 1024)

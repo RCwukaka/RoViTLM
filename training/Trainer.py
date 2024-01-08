@@ -9,10 +9,11 @@ from torch.cuda.amp import GradScaler
 from torch.utils.data import DataLoader
 from torch.nn.parallel import DistributedDataParallel as DDP
 from datetime import datetime
-from time import time, sleep
+from time import time
 
 from tqdm import tqdm
 
+import pandas as pd
 from INet.training.logger.net_logger import NetLogger
 from torch import distributed as dist, autocast
 
@@ -31,6 +32,7 @@ class Trainer:
             loss: torch.nn.Module,
             gpu_id: int,
             model_name: str,
+            task_name: str,
             lamda: int,
             device: torch.device = torch.device('cuda'),
     ) -> None:
@@ -39,9 +41,11 @@ class Trainer:
         self.num_epochs = 1000
         self.lamda = lamda
         self.model_name = model_name
+        self.task_name = task_name
 
-        self.current_epoch = 0
-        self.train_outputs = {}
+        self.current_epoch = 1
+        self.train_outputs = []
+        self.train_loss = []
         self.gpu_id = gpu_id
         self.device = device
         self.source_data = source_data
@@ -85,6 +89,7 @@ class Trainer:
         #     f"target_accuracy: {np.round(self.logger.my_fantastic_logging['target_accuracy'][-1], decimals=4)} ")
         self.print_to_log_file(
             f"Epoch time: {np.round(self.logger.my_fantastic_logging['epoch_end_timestamps'][-1] - self.logger.my_fantastic_logging['epoch_start_timestamps'][-1], decimals=2)} s")
+        self.current_epoch += 1
 
     def on_train_start(self):
         if self.is_ddp:
@@ -92,13 +97,23 @@ class Trainer:
 
     def on_train_end(self):
         empty_cache(self.device)
-        self.print_to_log_file("Training done.")
 
+        dir = join(self.absolute_path, '../output/' + self.model_name)
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+        dfData = {  # 用字典设置DataFrame所需数据
+            'accuracy': self.train_outputs,
+            'loss': self.train_loss
+        }
+        df = pd.DataFrame(dfData)
+        df.to_excel(dir + "/" + self.task_name + '.xlsx', index=False)
+
+        self.print_to_log_file(self.model_name + "==" + self.task_name + "==Training done.")
 
     def on_train_epoch_start(self):
         self.lr_scheduler.step(self.current_epoch)
         self.print_to_log_file('')
-        self.print_to_log_file(f'Epoch {self.current_epoch + 1}/{self.num_epochs}')
+        self.print_to_log_file(f'Epoch {self.current_epoch}/{self.num_epochs}')
         self.print_to_log_file(
             f"Current learning rate: {np.round(self.optimizer.param_groups[0]['lr'], decimals=5)}")
         self.logger.log('lrs', self.optimizer.param_groups[0]['lr'], self.current_epoch)
@@ -122,32 +137,11 @@ class Trainer:
 
         self.logger.log('train_loss', train_loss_here, self.current_epoch)
         self.logger.log('train_accuracy', train_accuracy_here, self.current_epoch)
-        self.current_epoch += 1
-        if self.current_epoch > int(self.num_epochs / 2) and self.current_epoch % 3 == 0:
+        self.train_loss.append(train_loss_here)
+        self.train_outputs.append(train_accuracy_here)
+        if (self.current_epoch > int(
+                self.num_epochs / 2) and self.current_epoch % 5 == 0) or self.current_epoch == self.num_epochs:
             self.savePoint()
-
-    def on_target_epoch_start(self):
-        return
-
-    def on_target_epoch_end(self, target_outputs: List[dict]):
-        outputs = collate_outputs(target_outputs)
-
-        if self.is_ddp:
-            val_tr = [None for _ in range(dist.get_world_size())]
-            dist.all_gather_object(val_tr, outputs)
-            target_loss = []
-            target_accuracy = []
-            for _ in val_tr:
-                target_loss = np.append(target_loss, _['target_loss'])
-                target_accuracy = np.append(target_accuracy, _['target_accuracy'])
-            target_loss_here = target_loss.mean()
-            target_accuracy_here = target_accuracy.mean()
-        else:
-            target_loss_here = np.mean(outputs['target_loss'])
-            target_accuracy_here = np.mean(outputs['target_accuracy'])
-
-        self.logger.log('target_loss', target_loss_here, self.current_epoch)
-        self.logger.log('target_accuracy', target_accuracy_here, self.current_epoch)
 
     def print_to_log_file(self, *args, also_print_to_console=True, add_timestamp=True):
         if self.local_rank == 0:
@@ -183,9 +177,9 @@ class Trainer:
             'net': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'lr_schedule': self.lr_scheduler.state_dict()}
-        dir = join(self.absolute_path, '../checkpoint/' + self.model_name)
+        dir = join(self.absolute_path, '../checkpoint/' + self.model_name + '/' + self.task_name)
         if not os.path.isdir(dir):
-            os.mkdir(dir)
+            os.makedirs(dir)
         torch.save(checkpoint, dir + '/ckpt_%s.pth' % (str(self.current_epoch)))
 
     def train_step(self):
@@ -233,25 +227,6 @@ class Trainer:
 
         return {'train_loss': l.detach().cpu().numpy(), 'train_accuracy': accuracy / batch_size}
 
-    def target_step(self):
-        self.target_data.sampler.set_epoch(self.current_epoch)
-        self.model.eval()
-        with torch.no_grad():
-            target_outputs = []
-            for source1, source2, label in self.target_data:
-                source1 = source1.to(self.gpu_id)
-                source2 = source2.to(self.gpu_id)
-                label = label.to(self.gpu_id)
-                class_output, domain_output = self.model(source1.float(), source2.float())
-                predicted = torch.argmax(class_output, 1)
-                accuracy = (predicted == torch.argmax(label, 1)).sum().item()
-                del source1, source2
-                l = self.loss(class_output, domain_output, label.float(),
-                              domain_label=np.tile([1., 0.], [len(label), 1]))
-                target_outputs.append(
-                    {'target_loss': l.detach().cpu().numpy(), 'target_accuracy': accuracy / class_output.size(0)})
-            return target_outputs
-
     def train(self, max_epochs: int):
         self.on_train_start()
         self.num_epochs = max_epochs
@@ -267,6 +242,5 @@ class Trainer:
             # self.on_target_epoch_end(target_outputs)
 
             self.on_epoch_end()
-            if self.current_epoch + 1 >= max_epochs:
-                break
+
         self.on_train_end()

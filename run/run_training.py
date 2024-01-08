@@ -5,13 +5,12 @@ import torch.cuda
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
+from INet.datasets.WBD import WEBDDataset
+from INet.run import config
 from INet.training.loss.LRSADTLMLoss import LRSADTLMLoss
-from INet.training.model.LRSADTLM.LRSADTLM import LRSADTLM
-from data.TYUTDataSet import datasetInfo
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from torch.utils.data import Dataset, DataLoader
-from INet.datasets.TYUT import TYUTDataset
 from INet.training.Trainer import Trainer
 
 from torch.utils.data.distributed import DistributedSampler
@@ -30,15 +29,27 @@ def cleanup_ddp():
     dist.destroy_process_group()
 
 
-def run_ddp(rank, world_size, total_epochs, batch_size, model_name, lamda, device):
+def run_ddp(rank, world_size, total_epochs, batch_size, lamda, device):
     setup_ddp(rank, world_size)
 
-    # run model
-    source, target, model, optimizer, loss = load_train_objs()
-    source_data = prepare_dataloader(source, batch_size)
-    target_data = prepare_dataloader(target, batch_size)
-    trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, model_name, lamda, device)
-    trainer.train(total_epochs)
+    for task in config.transfer_task1:
+        # run model
+        source = WEBDDataset(mapdata=task['source'])
+        target = WEBDDataset(mapdata=task['target'])
+
+        datasetReset(source, target)
+
+        for train_model in config.getTrainMode(task['num_class']):
+
+            model = train_model['model']  # load your model
+            optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
+            loss = LRSADTLMLoss()
+
+            source_data = prepare_dataloader(source, batch_size)
+            target_data = prepare_dataloader(target, batch_size)
+            trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
+                              lamda, device)
+            trainer.train(total_epochs)
 
     cleanup_ddp()
 
@@ -52,26 +63,17 @@ def prepare_dataloader(dataset: Dataset, batch_size: int):
         sampler=DistributedSampler(dataset)  # 这个 sampler 自动将数据分块后送个各个 GPU，它能避免数据重叠
     )
 
+
 def datasetReset(source, target):
     if len(source) > len(target):
         source.remove(len(target))
     else:
         target.remove(len(source))
 
-def load_train_objs():
-    source = TYUTDataset(mapdata=datasetInfo.map_single_600)
-    target = TYUTDataset(mapdata=datasetInfo.map_single_900)
 
-    datasetReset(source, target)
-    model = LRSADTLM()  # load your model
-    optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
-    loss = LRSADTLMLoss()
-    return source, target, model, optimizer, loss
-
-
-def run_training(world_size, batch_size, total_epochs, model_name, lamda, device):
+def run_training(world_size, batch_size, total_epochs, lamda, device):
     mp.spawn(run_ddp,
-             args=(world_size, total_epochs, batch_size, model_name, lamda, device),
+             args=(world_size, total_epochs, batch_size, lamda, device),
              nprocs=world_size,
              join=True)
 
@@ -107,7 +109,6 @@ def run_training_entry():
     run_training(world_size=args.world_size,
                  batch_size=args.batch_size,
                  total_epochs=args.total_epochs,
-                 model_name="net",
                  lamda=args.lamda,
                  device=device)
 
