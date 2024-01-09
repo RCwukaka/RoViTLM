@@ -6,9 +6,12 @@ class DomainClassifier(nn.Module):
         super(DomainClassifier, self).__init__()
         self.layer = nn.Sequential(
             nn.Linear(in_channel, 500),
+            nn.BatchNorm1d(500),
             nn.ReLU(),
-            nn.Linear(500, 1),
-            nn.Sigmoid()
+            nn.Linear(500, 500),
+            nn.BatchNorm1d(500),
+            nn.ReLU(),
+            nn.Linear(500, 1)
         )
 
     def forward(self, x):

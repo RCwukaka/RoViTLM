@@ -6,19 +6,19 @@ from torch.autograd import Function
 from INet.training.model.LRSADTLM.DomainClassifier import DomainClassifier
 from INet.training.model.LRSADTLM.FaultClassifier import FaultClassifier
 from INet.training.model.LRSADTLM.LightweightNet import LightweightNet
-from INet.training.model.ResNet.BasicBlock import BasicBlock
-from INet.training.model.ResNet.ResNet import ResNet
 from INet.training.model.ViT.ViT import ViT
 
 
-class GRL(Function):
-
-    def forward(self, x):
+class ReverseLayerF(Function):
+    @staticmethod
+    def forward(ctx, x, alpha):
+        ctx.alpha = alpha
         return x.view_as(x)
 
-    def backward(self, grad_output):
-        output = grad_output.neg()
-        return output
+    @staticmethod
+    def backward(ctx, grad_output):
+        output = grad_output.neg() * ctx.alpha
+        return output, None
 
 
 class LRSADTLM(nn.Module):
@@ -26,7 +26,7 @@ class LRSADTLM(nn.Module):
         super(LRSADTLM, self).__init__()
         self.layerResNet = net1
         self.SAMNet = net2
-        self.grl = GRL()
+        self.grl = ReverseLayerF()
         self.class_classifier = FaultClassifier(out_channel=num_class)
         self.domain_classifier = DomainClassifier()
         self.fc = nn.Sequential(
@@ -51,9 +51,9 @@ class LRSADTLM(nn.Module):
         target_feature = self.fc(target_feature)
         target_output = self.class_classifier(target_feature)
 
-        reverse_source_feature = self.grl.apply(source_feature)
+        reverse_source_feature = self.grl.apply(source_feature, 1.0)
         source_domain_output = self.domain_classifier(reverse_source_feature)
-        reverse_target_feature = self.grl.apply(target_feature)
+        reverse_target_feature = self.grl.apply(target_feature, 1.0)
         target_domain_output = self.domain_classifier(reverse_target_feature)
 
         return source_output, source_feature, target_output, target_feature, \

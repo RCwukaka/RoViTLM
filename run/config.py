@@ -1,3 +1,4 @@
+from INet.datasets.PaderbornBearingDataset.datasetInfo import getPBDDiffWorkCondition
 from INet.datasets.TYUTDataSet.datasetInfo import getTYUTDiffWorkCondition
 from INet.datasets.WestBearingDataSet.datasetInfo import getWBDDiffWorkCondition
 from INet.training.model.LRSADTLM.LRSADTLM import LRSADTLM
@@ -7,19 +8,20 @@ from INet.training.model.ResNet.BasicBlock import BasicBlock
 
 def getTrainMode(num_class):
     return [
-        {'name': 'Resnet18', 'model': LRSADTLM(net1=ResNet(BasicBlock, [2, 2, 2, 2], num_classes=256),
-                                               net2=ResNet(BasicBlock, [2, 2, 2, 2], num_classes=256),
-                                               num_class=num_class)},
-        {'name': 'Resnet34', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
-                                               net2=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
-                                               num_class=num_class)},
+        # {'name': 'Resnet18', 'model': LRSADTLM(net1=ResNet(BasicBlock, [2, 2, 2, 2], num_classes=256),
+        #                                        net2=ResNet(BasicBlock, [2, 2, 2, 2], num_classes=256),
+        #                                        num_class=num_class)},
+        # {'name': 'Resnet34', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
+        #                                        net2=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
+        #                                        num_class=num_class)},
         {'name': 'LRSADTLM', 'model': LRSADTLM()}
     ]
 
 
 data = {
     'WBD': getWBDDiffWorkCondition(),
-    'TYUT': getTYUTDiffWorkCondition()
+    'TYUT': getTYUTDiffWorkCondition(),
+    'PBD': getPBDDiffWorkCondition(),
 }
 
 transfer_task1 = [
@@ -62,4 +64,19 @@ transfer_task2 = [
      'num_class': data['TYUT']['num_class']},
     {'name': 'T2_T1', 'source': data['TYUT']['data'][0], 'target': data['TYUT']['data'][2],
      'num_class': data['TYUT']['num_class']},
+]
+
+transfer_task3 = [
+    {'name': 'P0_P1', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][1],
+     'num_class': data['PBD']['num_class']},
+    {'name': 'P0_P2', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][2],
+     'num_class': data['PBD']['num_class']},
+    {'name': 'P1_P0', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][1],
+     'num_class': data['PBD']['num_class']},
+    {'name': 'P1_P2', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][2],
+     'num_class': data['PBD']['num_class']},
+    {'name': 'P2_P0', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][1],
+     'num_class': data['PBD']['num_class']},
+    {'name': 'P2_P1', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][2],
+     'num_class': data['PBD']['num_class']},
 ]

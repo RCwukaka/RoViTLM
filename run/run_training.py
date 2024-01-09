@@ -8,6 +8,7 @@ import torch.multiprocessing as mp
 from INet.datasets.WBD import WEBDDataset
 from INet.run import config
 from INet.training.loss.LRSADTLMLoss import LRSADTLMLoss
+from INet.training.output.analysis import getResult
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from torch.utils.data import Dataset, DataLoader
@@ -52,6 +53,7 @@ def run_ddp(rank, world_size, total_epochs, batch_size, lamda, device):
             trainer.train(total_epochs)
 
     cleanup_ddp()
+    getResult()
 
 
 def prepare_dataloader(dataset: Dataset, batch_size: int):
@@ -81,7 +83,7 @@ def run_training(world_size, batch_size, total_epochs, lamda, device):
 def run_training_entry():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--total_epochs', type=str, required=False, default=50,
+    parser.add_argument('--total_epochs', type=str, required=False, default=100,
                         help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 50')
     parser.add_argument('-world_size', type=int, required=False, default=1,
                         help='[OPTIONAL] Use this flag to specify the number of GPU. Default: 1')

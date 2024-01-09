@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from os.path import join
 from typing import List
 
@@ -98,7 +99,7 @@ class Trainer:
     def on_train_end(self):
         empty_cache(self.device)
 
-        dir = join(self.absolute_path, '../output/' + self.model_name)
+        dir = join(self.absolute_path, '../output/' + self.model_name + "/" + self.task_name[0])
         if not os.path.isdir(dir):
             os.makedirs(dir)
         dfData = {  # 用字典设置DataFrame所需数据
