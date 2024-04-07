@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch.nn.functional as F
 
 from INet.training.loss.MK_MMDLoss import MK_MMDLoss
 from INet.training.loss.DomainLoss import DomainLoss
@@ -18,4 +17,4 @@ class LRSADTLMLoss(nn.Module):
         class_loss = self.faultLoss(source_output, source_label)
         mmd_loss = self.mmdLoss(source_feature, target_feature)
         domain_loss = self.domainLoss(source_domain_output, target_domain_output)
-        return mmd_loss + lamda * domain_loss + class_loss
+        return class_loss + lamda * domain_loss

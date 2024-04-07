@@ -127,7 +127,7 @@ class ViT(nn.Module):
                  patch_size: int = 4,
                  emb_size: int = 4*4*1,
                  img_size: int = 16,
-                 depth: int = 8,
+                 depth: int = 4,
                  num_classes: int = 256,
                  **kwargs):
         super(ViT, self).__init__()

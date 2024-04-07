@@ -7,6 +7,9 @@ class DomainLoss(nn.Module):
         super(DomainLoss, self).__init__()
 
     def forward(self, source_domain_output, target_domain_output):
+        source_domain_label = torch.ones(len(source_domain_output), 1)
+        target_domain_label = torch.zeros(len(target_domain_output), 1)
+
         source_loss = self.get_adversarial_result(source_domain_output, True)
         target_loss = self.get_adversarial_result(target_domain_output, False)
         return source_loss + target_loss

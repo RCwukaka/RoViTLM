@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader
 from torch.nn.parallel import DistributedDataParallel as DDP
 from datetime import datetime
 from time import time
-
 from tqdm import tqdm
 
 import pandas as pd
@@ -54,7 +53,7 @@ class Trainer:
         self.optimizer = optimizer
         self.lr_scheduler = PolyLRScheduler(optimizer, self.initial_lr, self.num_epochs)
         self.loss = loss
-        self.model = DDP(model.to(self.device), device_ids=[gpu_id])
+        self.model = DDP(model.to(self.device), device_ids=[gpu_id], broadcast_buffers=False)
         self.grad_scaler = GradScaler() if self.device.type == 'cuda' else None
         self.logger = NetLogger()
         self.is_ddp = dist.is_available() and dist.is_initialized()
@@ -205,9 +204,9 @@ class Trainer:
         batch_size = len(sources_X1)
         self.optimizer.zero_grad(set_to_none=True)
         with autocast(self.device.type, enabled=True) if self.device.type == 'cuda' else dummy_context():
-            source_output, source_feature, \
-            target_output, target_feature, \
-            source_domain_output, target_domain_output = self.model(sources_X1, sources_X2, targets_X1, targets_X2)
+            source_output, source_feature, source_domain_output = self.model(sources_X1, sources_X2)
+            target_output, target_feature, target_domain_output = self.model(targets_X1, targets_X2)
+
             l = self.loss(source_output, sources_label, source_feature,
                           target_feature, source_domain_output, target_domain_output,
                           lamda=self.lamda)
@@ -218,12 +217,10 @@ class Trainer:
         if self.grad_scaler is not None:
             self.grad_scaler.scale(l).backward()
             self.grad_scaler.unscale_(self.optimizer)
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 12)
             self.grad_scaler.step(self.optimizer)
             self.grad_scaler.update()
         else:
             l.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 12)
             self.optimizer.step()
 
         return {'train_loss': l.detach().cpu().numpy(), 'train_accuracy': accuracy / batch_size}

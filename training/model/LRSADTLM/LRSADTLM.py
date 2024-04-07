@@ -30,11 +30,34 @@ class LRSADTLM(nn.Module):
         self.class_classifier = FaultClassifier(out_channel=num_class)
         self.domain_classifier = DomainClassifier()
         self.fc = nn.Sequential(
-            nn.Linear(512, 1024)
+            nn.Linear(512, 1024),
+            nn.BatchNorm1d(1024),
+            nn.ReLU(),
         )
 
-    def forward(self, source_x1, source_x2, target_x1, target_x2):
+    def forward(self, source_x1, source_x2):
         # input1  b*64*64   input2 b*16*16
+        # source_x1 = rearrange(source_x1, "b (c w) h -> b c w h", c=1)
+        # source_feature1 = self.layerResNet(source_x1)
+        # source_x2 = rearrange(source_x2, "b (c w) h -> b c w h", c=1)
+        # source_feature2 = self.SAMNet(source_x2)
+        # source_feature = torch.cat((source_feature1, source_feature2), dim=1)
+        # source_feature = self.fc(source_feature)
+        # source_output = self.class_classifier(source_feature)
+        #
+        # target_x1 = rearrange(target_x1, "b (c w) h -> b c w h", c=1)
+        # target_feature1 = self.layerResNet(target_x1)
+        # target_x2 = rearrange(target_x2, "b (c w) h -> b c w h", c=1)
+        # target_feature2 = self.SAMNet(target_x2)
+        # target_feature = torch.cat((target_feature1, target_feature2), dim=1)
+        # target_feature = self.fc(target_feature)
+        # target_output = self.class_classifier(target_feature)
+        #
+        # reverse_source_feature = self.grl.apply(source_feature, 1.0)
+        # source_domain_output = self.domain_classifier(reverse_source_feature)
+        # reverse_target_feature = self.grl.apply(target_feature, 1.0)
+        # target_domain_output = self.domain_classifier(reverse_target_feature)
+
         source_x1 = rearrange(source_x1, "b (c w) h -> b c w h", c=1)
         source_feature1 = self.layerResNet(source_x1)
         source_x2 = rearrange(source_x2, "b (c w) h -> b c w h", c=1)
@@ -43,18 +66,7 @@ class LRSADTLM(nn.Module):
         source_feature = self.fc(source_feature)
         source_output = self.class_classifier(source_feature)
 
-        target_x1 = rearrange(target_x1, "b (c w) h -> b c w h", c=1)
-        target_feature1 = self.layerResNet(target_x1)
-        target_x2 = rearrange(target_x2, "b (c w) h -> b c w h", c=1)
-        target_feature2 = self.SAMNet(target_x2)
-        target_feature = torch.cat((target_feature1, target_feature2), dim=1)
-        target_feature = self.fc(target_feature)
-        target_output = self.class_classifier(target_feature)
-
         reverse_source_feature = self.grl.apply(source_feature, 1.0)
         source_domain_output = self.domain_classifier(reverse_source_feature)
-        reverse_target_feature = self.grl.apply(target_feature, 1.0)
-        target_domain_output = self.domain_classifier(reverse_target_feature)
 
-        return source_output, source_feature, target_output, target_feature, \
-               source_domain_output, target_domain_output
+        return source_output, source_feature, source_domain_output
