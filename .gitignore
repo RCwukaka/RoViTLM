@@ -4,4 +4,3 @@ __pycache__
 training/checkpoint/net/
 training/fold_logging
 training/checkpoint
-training/output
