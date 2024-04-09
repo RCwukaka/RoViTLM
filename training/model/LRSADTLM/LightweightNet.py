@@ -7,15 +7,15 @@ class LightweightNet(nn.Module):
         self.layer1 = nn.Sequential(
             nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(16),
-            nn.ReLU(),
+            nn.LeakyReLU(),
         )
         self.block1 = nn.Sequential(
             nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(32),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(32),
-            nn.ReLU(),
+            nn.LeakyReLU(),
         )
         self.res1 = nn.Sequential(
             nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
@@ -24,10 +24,10 @@ class LightweightNet(nn.Module):
         self.block2 = nn.Sequential(
             nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(32),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(32),
-            nn.ReLU(),
+            nn.LeakyReLU(),
         )
         self.res2 = nn.Sequential(
             nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
@@ -36,20 +36,20 @@ class LightweightNet(nn.Module):
         self.block3 = nn.Sequential(
             nn.Conv2d(32, 16, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm2d(16),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Conv2d(16, 16, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm2d(16),
-            nn.ReLU(),
+            nn.LeakyReLU(),
         )
         self.res3 = nn.Sequential(
             nn.Conv2d(32, 16, kernel_size=3, stride=4, padding=1),
             nn.BatchNorm2d(16),
         )
 
-        self.relu = nn.ReLU()
+        self.relu = nn.LeakyReLU()
 
         self.fc = nn.Sequential(
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.AvgPool2d(kernel_size=4, stride=4),
             nn.Flatten()
         )

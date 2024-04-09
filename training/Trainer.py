@@ -137,11 +137,12 @@ class Trainer:
 
         self.logger.log('train_loss', train_loss_here, self.current_epoch)
         self.logger.log('train_accuracy', train_accuracy_here, self.current_epoch)
+        self.print_to_log_file(self.model_name + "==" + self.task_name)
         self.train_loss.append(train_loss_here)
         self.train_outputs.append(train_accuracy_here)
-        if (self.current_epoch > int(
-                self.num_epochs / 2) and self.current_epoch % 5 == 0) or self.current_epoch == self.num_epochs:
-            self.savePoint()
+        # if (self.current_epoch > int(
+        #         self.num_epochs / 2) and self.current_epoch % 10 == 0) or self.current_epoch == self.num_epochs:
+        #     self.savePoint()
 
     def print_to_log_file(self, *args, also_print_to_console=True, add_timestamp=True):
         if self.local_rank == 0:
@@ -180,7 +181,10 @@ class Trainer:
         dir = join(self.absolute_path, '../checkpoint/' + self.model_name + '/' + self.task_name)
         if not os.path.isdir(dir):
             os.makedirs(dir)
-        torch.save(checkpoint, dir + '/ckpt_%s.pth' % (str(self.current_epoch)))
+        try:
+            torch.save(checkpoint, dir + '/ckpt_%s.pth' % (str(self.current_epoch)))
+        except Exception as e:
+            print("sss")
 
     def train_step(self):
         self.source_data.sampler.set_epoch(self.current_epoch)

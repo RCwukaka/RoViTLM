@@ -1,6 +1,7 @@
 from INet.datasets.PaderbornBearingDataset.datasetInfo import getPBDDiffWorkCondition
 from INet.datasets.TYUTDataSet.datasetInfo import getTYUTDiffWorkCondition
 from INet.datasets.WestBearingDataSet.datasetInfo import getWBDDiffWorkCondition
+from INet.training.model.CNN.CNN import CNN
 from INet.training.model.LRSADTLM.LRSADTLM import LRSADTLM
 from INet.training.model.ResNet.ResNet import ResNet
 from INet.training.model.ResNet.BasicBlock import BasicBlock
@@ -14,9 +15,15 @@ def getTrainMode(num_class):
         # {'name': 'Resnet18_couple', 'model': LRSADTLM(net1=ResNet(BasicBlock, [2, 2, 2, 2], num_classes=256),
         #                                        net2=ResNet(BasicBlock, [2, 2, 2, 2], num_classes=256),
         #                                        num_class=num_class)},
-        # {'name': 'Resnet34', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
+        # {'name': 'Resnet34_couple', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
         #                                        net2=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
         #                                        num_class=num_class)},
+        # {'name': 'Resnet34_ViT', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
+        #                                            net2=ViT(),
+        #                                            num_class=num_class)},
+        # {'name': 'CNN', 'model': LRSADTLM(net1=CNN(),
+        #                                    net2=CNN(),
+        #                                    num_class=num_class)},
         {'name': 'LRSADTLM', 'model': LRSADTLM(num_class=num_class)}
     ]
 

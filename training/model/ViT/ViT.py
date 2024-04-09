@@ -15,11 +15,11 @@ class PatchEmbedding(nn.Module):
         super().__init__()
         self.projection = nn.Sequential(
             # using a conv layer instead of a linear one -> performance gains
-            nn.Conv2d(in_channels, emb_size, kernel_size=patch_size, stride=patch_size),
+            nn.Conv2d(in_channels, emb_size, kernel_size=(1, patch_size), stride=1),
             Rearrange('b e (h) (w) -> b (h w) e'),
         )
         self.cls_token = nn.Parameter(torch.randn(1, 1, emb_size))
-        self.positions = nn.Parameter(torch.randn((img_size // patch_size) ** 2 + 1, emb_size))
+        self.positions = nn.Parameter(torch.randn(1, patch_size + 1, emb_size))
 
     def forward(self, x: Tensor) -> Tensor:
         b, _, _, _ = x.shape
@@ -33,11 +33,10 @@ class PatchEmbedding(nn.Module):
 
 
 class FeedForwardBlock(nn.Sequential):
-    def __init__(self, emb_size: int, expansion: int = 4, drop_p: float = 0.2):
+    def __init__(self, emb_size: int, expansion: int = 128):
         super().__init__(
             nn.Linear(emb_size, expansion * emb_size),
-            nn.GELU(),
-            nn.Dropout(drop_p),
+            nn.ReLU(),
             nn.Linear(expansion * emb_size, emb_size),
         )
 
@@ -55,7 +54,7 @@ class ResidualAdd(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, emb_size, num_heads=1, dropout: float = 0.2):
+    def __init__(self, emb_size, num_heads=2, dropout: float = 0.2):
         super().__init__()
         self.emb_size = emb_size
         self.num_heads = num_heads
@@ -76,8 +75,6 @@ class MultiHeadAttention(nn.Module):
             fill_value = torch.finfo(torch.float32).min
             energy.mask_fill(~mask, fill_value)
         att = F.softmax(energy, dim=-1)
-        t = torch.isnan(values)
-        s = torch.isnan(att)
         att = self.att_drop(att)
         # sum up over the third axis
         out = torch.einsum('bhal, bhlv -> bhav ', att, values)
@@ -90,8 +87,7 @@ class TransformerEncoderBlock(nn.Sequential):
     def __init__(self,
                  emb_size,
                  drop_p: float = 0.,
-                 forward_expansion: int = 4,
-                 forward_drop_p: float = 0.,
+                 forward_expansion: int = 128,
                  **kwargs):
         super().__init__(
             ResidualAdd(nn.Sequential(
@@ -102,7 +98,7 @@ class TransformerEncoderBlock(nn.Sequential):
             ResidualAdd(nn.Sequential(
                 nn.LayerNorm(emb_size),
                 FeedForwardBlock(
-                    emb_size, expansion=forward_expansion, drop_p=forward_drop_p),
+                    emb_size, expansion=forward_expansion),
                 nn.Dropout(drop_p)
             )
             ))
@@ -124,8 +120,8 @@ class TransformerEncoder(nn.Sequential):
 class ViT(nn.Module):
     def __init__(self,
                  in_channels: int = 1,
-                 patch_size: int = 4,
-                 emb_size: int = 4*4*1,
+                 patch_size: int = 16,
+                 emb_size: int = 512,
                  img_size: int = 16,
                  depth: int = 4,
                  num_classes: int = 256,

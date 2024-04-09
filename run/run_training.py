@@ -54,29 +54,10 @@ def run_ddp(rank, world_size, total_epochs, batch_size, lamda, device):
     #                           lamda, device)
     #         trainer.train(total_epochs)
 
-    # for task in config.transfer_task2:
-    #     # run model
-    #     source = TYUTDataset(mapdata=task['source'])
-    #     target = TYUTDataset(mapdata=task['target'])
-    #
-    #     datasetReset(source, target)
-    #
-    #     for train_model in config.getTrainMode(task['num_class']):
-    #
-    #         model = train_model['model']  # load your model
-    #         optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
-    #         loss = LRSADTLMLoss()
-    #
-    #         source_data = prepare_dataloader(source, batch_size)
-    #         target_data = prepare_dataloader(target, batch_size)
-    #         trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
-    #                           lamda, device)
-    #         trainer.train(total_epochs)
-
-    for task in config.transfer_task3:
+    for task in config.transfer_task2:
         # run model
-        source = PaderbornBearingDataset(mapdata=task['source'])
-        target = PaderbornBearingDataset(mapdata=task['target'])
+        source = TYUTDataset(mapdata=task['source'])
+        target = TYUTDataset(mapdata=task['target'])
 
         datasetReset(source, target)
 
@@ -91,6 +72,25 @@ def run_ddp(rank, world_size, total_epochs, batch_size, lamda, device):
             trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
                               lamda, device)
             trainer.train(total_epochs)
+
+    # for task in config.transfer_task3:
+    #     # run model
+    #     source = PaderbornBearingDataset(mapdata=task['source'])
+    #     target = PaderbornBearingDataset(mapdata=task['target'])
+    #
+    #     datasetReset(source, target)
+    #
+    #     for train_model in config.getTrainMode(task['num_class']):
+    #
+    #         model = train_model['model']  # load your model
+    #         optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
+    #         loss = LRSADTLMLoss()
+    #
+    #         source_data = prepare_dataloader(source, batch_size)
+    #         target_data = prepare_dataloader(target, batch_size)
+    #         trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
+    #                           lamda, device)
+    #         trainer.train(total_epochs)
 
     cleanup_ddp()
     # getResult()
