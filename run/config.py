@@ -18,13 +18,14 @@ def getTrainMode(num_class):
         # {'name': 'Resnet34_couple', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
         #                                        net2=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
         #                                        num_class=num_class)},
-        {'name': 'Resnet34_ViT', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
-                                                   net2=ViT(),
-                                                   num_class=num_class)},
+        # {'name': 'Resnet34_ViT', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
+        #                                            net2=ViT(),
+        #                                            num_class=num_class)},
         # {'name': 'CNN', 'model': LRSADTLM(net1=CNN(),
         #                                    net2=CNN(),
         #                                    num_class=num_class)},
-        # {'name': 'LRSADTLM', 'model': LRSADTLM(num_class=num_class)}
+        # {'name': 'LRSADTLM_5', 'model': LRSADTLM(num_class=num_class)},
+        {'name': 'LRSADTLM2_5', 'model': LRSADTLM(num_class=num_class)},
     ]
 
 
@@ -77,10 +78,10 @@ transfer_task2 = [
 ]
 
 transfer_task3 = [
-    # {'name': 'P0_P1', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][1],
-    #  'num_class': data['PBD']['num_class']},
-    # {'name': 'P0_P2', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][2],
-    #  'num_class': data['PBD']['num_class']},
+    {'name': 'P0_P1', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][1],
+     'num_class': data['PBD']['num_class']},
+    {'name': 'P0_P2', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][2],
+     'num_class': data['PBD']['num_class']},
     {'name': 'P1_P0', 'source': data['PBD']['data'][1], 'target': data['PBD']['data'][0],
      'num_class': data['PBD']['num_class']},
     {'name': 'P1_P2', 'source': data['PBD']['data'][1], 'target': data['PBD']['data'][2],

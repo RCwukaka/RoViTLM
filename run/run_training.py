@@ -32,27 +32,27 @@ def cleanup_ddp():
     dist.destroy_process_group()
 
 
-def run_ddp(rank, world_size, total_epochs, batch_size, lamda, device):
+def run_ddp(rank, world_size, total_epochs, batch_size, lamda, mu, device):
     setup_ddp(rank, world_size)
 
-    # for task in config.transfer_task1:
-    #     # run model
-    #     source = WEBDDataset(mapdata=task['source'])
-    #     target = WEBDDataset(mapdata=task['target'])
-    #
-    #     datasetReset(source, target)
-    #
-    #     for train_model in config.getTrainMode(task['num_class']):
-    #
-    #         model = train_model['model']  # load your model
-    #         optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
-    #         loss = LRSADTLMLoss()
-    #
-    #         source_data = prepare_dataloader(source, batch_size)
-    #         target_data = prepare_dataloader(target, batch_size)
-    #         trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
-    #                           lamda, device)
-    #         trainer.train(total_epochs)
+    for task in config.transfer_task1:
+        # run model
+        source = WEBDDataset(mapdata=task['source'])
+        target = WEBDDataset(mapdata=task['target'])
+
+        datasetReset(source, target)
+
+        for train_model in config.getTrainMode(task['num_class']):
+
+            model = train_model['model']  # load your model
+            optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
+            loss = LRSADTLMLoss()
+
+            source_data = prepare_dataloader(source, batch_size)
+            target_data = prepare_dataloader(target, batch_size)
+            trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
+                              lamda, mu, device)
+            trainer.train(total_epochs)
 
     # for task in config.transfer_task2:
     #     # run model
@@ -70,27 +70,27 @@ def run_ddp(rank, world_size, total_epochs, batch_size, lamda, device):
     #         source_data = prepare_dataloader(source, batch_size)
     #         target_data = prepare_dataloader(target, batch_size)
     #         trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
-    #                           lamda, device)
+    #                           lamda, mu, device)
     #         trainer.train(total_epochs)
 
-    for task in config.transfer_task3:
-        # run model
-        source = PaderbornBearingDataset(mapdata=task['source'])
-        target = PaderbornBearingDataset(mapdata=task['target'])
-
-        datasetReset(source, target)
-
-        for train_model in config.getTrainMode(task['num_class']):
-
-            model = train_model['model']  # load your model
-            optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
-            loss = LRSADTLMLoss()
-
-            source_data = prepare_dataloader(source, batch_size)
-            target_data = prepare_dataloader(target, batch_size)
-            trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
-                              lamda, device)
-            trainer.train(total_epochs)
+    # for task in config.transfer_task3:
+    #     # run model
+    #     source = PaderbornBearingDataset(mapdata=task['source'])
+    #     target = PaderbornBearingDataset(mapdata=task['target'])
+    #
+    #     datasetReset(source, target)
+    #
+    #     for train_model in config.getTrainMode(task['num_class']):
+    #
+    #         model = train_model['model']  # load your model
+    #         optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
+    #         loss = LRSADTLMLoss()
+    #
+    #         source_data = prepare_dataloader(source, batch_size)
+    #         target_data = prepare_dataloader(target, batch_size)
+    #         trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
+    #                           lamda, mu, device)
+    #         trainer.train(total_epochs)
 
     cleanup_ddp()
     # getResult()
@@ -113,9 +113,9 @@ def datasetReset(source, target):
         target.remove(len(source))
 
 
-def run_training(world_size, batch_size, total_epochs, lamda, device):
+def run_training(world_size, batch_size, total_epochs, lamda, mu, device):
     mp.spawn(run_ddp,
-             args=(world_size, total_epochs, batch_size, lamda, device),
+             args=(world_size, total_epochs, batch_size, lamda, mu, device),
              nprocs=world_size,
              join=True)
 
@@ -130,6 +130,8 @@ def run_training_entry():
     parser.add_argument('--batch_size', type=int, required=False, default=16,
                         help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 32')
     parser.add_argument('--lamda', type=int, required=False, default=1,
+                        help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 1')
+    parser.add_argument('--mu', type=int, required=False, default=5,
                         help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 1')
     parser.add_argument('-device', type=str, default='cuda', required=False)
     args = parser.parse_args()
@@ -152,6 +154,7 @@ def run_training_entry():
                  batch_size=args.batch_size,
                  total_epochs=args.total_epochs,
                  lamda=args.lamda,
+                 mu=args.mu,
                  device=device)
 
 

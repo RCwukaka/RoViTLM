@@ -34,12 +34,14 @@ class Trainer:
             model_name: str,
             task_name: str,
             lamda: int,
+            mu: int,
             device: torch.device = torch.device('cuda'),
     ) -> None:
         ### Some hyperparameters for you to fiddle with
         self.initial_lr = 1e-2
         self.num_epochs = 1000
         self.lamda = lamda
+        self.mu = mu
         self.model_name = model_name
         self.task_name = task_name
 
@@ -211,9 +213,9 @@ class Trainer:
             source_output, source_feature, source_domain_output = self.model(sources_X1, sources_X2)
             target_output, target_feature, target_domain_output = self.model(targets_X1, targets_X2)
 
-            l = self.loss(source_output, sources_label, source_feature,
+            l = self.loss(source_output, sources_label, source_feature, target_output,
                           target_feature, source_domain_output, target_domain_output,
-                          lamda=self.lamda)
+                          lamda=self.lamda, mu=self.mu)
             predicted = torch.argmax(target_output, 1)
             accuracy = (predicted == torch.argmax(targets_label, 1)).sum().item()
             del sources_X1, sources_X2, sources_label, targets_X1, targets_X2, targets_label
