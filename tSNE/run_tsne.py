@@ -15,6 +15,7 @@ from INet.datasets.PBD import PaderbornBearingDataset
 from INet.datasets.WBD import WEBDDataset
 from INet.run import config
 from INet.tSNE import tsne_config
+from sklearn.metrics import confusion_matrix
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from torch.utils.data import Dataset, DataLoader
@@ -102,7 +103,11 @@ def run_ddp(rank, world_size, total_epochs, batch_size, lamda, mu, device):
             output_np = output.view(output.size(0), -1).cpu().detach().numpy()
             X_tsne = TSNE().fit_transform(output_np)
             plt.scatter(X_tsne[:, 0], X_tsne[:, 1], s=12, c=np.argmax(label, axis=1), rasterized=True)
-            plt.show()
+            dir = join(current_file_path, 'output', train_model['name'], task['name'])
+            if not os.path.isdir(dir):
+                os.makedirs(dir)
+            plt.savefig(dir + '/result.svg', format='svg', bbox_inches='tight')
+            confusion_matrix(label, output)
 
     # for task in tsne_config.transfer_task4:
     #     # run model
@@ -196,6 +201,22 @@ def run_training_entry():
                  mu=args.mu,
                  device=device)
 
+def plot_confusion_matrix(cm, classes, cmap=plt.cm.Blues, title="MSACNN"):  # 生成混淆矩阵图
+
+    plt.imshow(cm, cmap=cmap)
+    plt.rcParams['font.sans-serif'] = ['kaiti']
+    cbar = plt.colorbar()
+    cbar.mappable.set_clim(0, 200)
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes)
+    plt.yticks(tick_marks, classes)
+
+    plt.ylim(len(classes) - 0.5, -0.5)
+    plt.tight_layout()
+    plt.ylabel('真实标签', fontsize=18,)
+    plt.xlabel('预测标签', fontsize=18,)
+    plt.savefig('./img/confusion.tif', dpi=300, bbox_inches='tight')
+    plt.show()
 
 if __name__ == '__main__':
     run_training_entry()
