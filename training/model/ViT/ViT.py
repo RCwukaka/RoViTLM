@@ -10,16 +10,17 @@ from torchsummary import summary
 
 
 class PatchEmbedding(nn.Module):
-    def __init__(self, in_channels, patch_size, emb_size, img_size):
+    def __init__(self, in_channels, patch_size, img_size, emb_size):
         self.patch_size = patch_size
+        self.img_size = img_size
         super().__init__()
         self.projection = nn.Sequential(
             # using a conv layer instead of a linear one -> performance gains
-            nn.Conv2d(in_channels, emb_size, kernel_size=(1, patch_size), stride=1),
+            nn.Conv2d(in_channels, emb_size, kernel_size=patch_size, stride=patch_size),
             Rearrange('b e (h) (w) -> b (h w) e'),
         )
         self.cls_token = nn.Parameter(torch.randn(1, 1, emb_size))
-        self.positions = nn.Parameter(torch.randn(1, patch_size + 1, emb_size))
+        self.positions = nn.Parameter(torch.randn(1, int((img_size[0]/patch_size[0])*(img_size[1]/patch_size[1])) + 1, emb_size))
 
     def forward(self, x: Tensor) -> Tensor:
         b, _, _, _ = x.shape
@@ -36,7 +37,7 @@ class FeedForwardBlock(nn.Sequential):
     def __init__(self, emb_size: int, expansion: int = 128):
         super().__init__(
             nn.Linear(emb_size, expansion * emb_size),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Linear(expansion * emb_size, emb_size),
         )
 
@@ -59,7 +60,7 @@ class MultiHeadAttention(nn.Module):
         self.emb_size = emb_size
         self.num_heads = num_heads
         # fuse the queries, keys and values in one matrix
-        self.qkv = nn.Linear(emb_size, emb_size * 3)
+        self.qkv = nn.Linear(emb_size, emb_size * 3, bias=False)
         self.att_drop = nn.Dropout(dropout)
         self.projection = nn.Linear(emb_size, emb_size)
 
@@ -86,7 +87,7 @@ class MultiHeadAttention(nn.Module):
 class TransformerEncoderBlock(nn.Sequential):
     def __init__(self,
                  emb_size,
-                 drop_p: float = 0.,
+                 drop_p: float = 0.2,
                  forward_expansion: int = 128,
                  **kwargs):
         super().__init__(
@@ -120,15 +121,15 @@ class TransformerEncoder(nn.Sequential):
 class ViT(nn.Module):
     def __init__(self,
                  in_channels: int = 1,
-                 patch_size: int = 16,
+                 patch_size: tuple = (1, 64),
+                 img_size: tuple = (16, 64),
                  emb_size: int = 512,
-                 img_size: int = 16,
                  depth: int = 4,
                  num_classes: int = 256,
                  **kwargs):
         super(ViT, self).__init__()
         self.layer1 = nn.Sequential(
-            PatchEmbedding(in_channels, patch_size, emb_size, img_size),
+            PatchEmbedding(in_channels, patch_size, img_size, emb_size),
             TransformerEncoder(depth, emb_size=emb_size, **kwargs),
             ClassificationHead(emb_size, num_classes)
         )

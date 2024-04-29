@@ -13,7 +13,6 @@ from datetime import datetime
 from time import time
 from tqdm import tqdm
 
-import pandas as pd
 from INet.training.logger.net_logger import NetLogger
 from torch import distributed as dist, autocast
 
@@ -55,7 +54,7 @@ class Trainer:
         self.optimizer = optimizer
         self.lr_scheduler = PolyLRScheduler(optimizer, self.initial_lr, self.num_epochs)
         self.loss = loss
-        self.model = DDP(model.to(self.device), device_ids=[gpu_id], broadcast_buffers=False)
+        self.model = DDP(model.to(self.device), device_ids=[gpu_id], broadcast_buffers=False, find_unused_parameters=True)
         self.grad_scaler = GradScaler() if self.device.type == 'cuda' else None
         self.logger = NetLogger()
         self.is_ddp = dist.is_available() and dist.is_initialized()
@@ -107,10 +106,10 @@ class Trainer:
             'accuracy': self.train_outputs,
             'loss': self.train_loss
         }
-        df = pd.DataFrame(dfData)
-        df.to_excel(dir + "/" + self.task_name + '.xlsx', index=False)
+        # df = pd.DataFrame(dfData)
+        # df.to_excel(dir + "/" + self.task_name + '.xlsx', index=False)
 
-        self.print_to_log_file(self.model_name + "==" + self.task_name + "==Training done.")
+        # self.print_to_log_file(self.model_name + "==" + self.task_name + "==Training done.")
 
     def on_train_epoch_start(self):
         self.lr_scheduler.step(self.current_epoch)
@@ -142,6 +141,8 @@ class Trainer:
         self.print_to_log_file(self.model_name + "==" + self.task_name)
         self.train_loss.append(train_loss_here)
         self.train_outputs.append(train_accuracy_here)
+        if self.current_epoch == int(self.num_epochs):
+            self.savePoint()
         # if (self.current_epoch > int(
         #         self.num_epochs / 2) and self.current_epoch % 10 == 0) or self.current_epoch == self.num_epochs:
         #     self.savePoint()

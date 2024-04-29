@@ -100,11 +100,6 @@ class FcaBasicBlock(nn.Module):
 
         return out
 
-def ResNet():
-    model = models.resnet18(pretrained=True)
-    model.fc = nn.Linear(model.fc.in_features, 39)
-    return model
-
 def fcanet18(num_classes=39, pretrained=False):
     """Constructs a FcaNet-34 model.
     Args:
@@ -125,7 +120,7 @@ def fcanet34(num_classes=13, pretrained=False):
     return model
 
 
-def fcanet50(num_classes=1_000, pretrained=False):
+def fcanet50(num_classes=1000, pretrained=False):
     """Constructs a FcaNet-50 model.
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
@@ -135,7 +130,7 @@ def fcanet50(num_classes=1_000, pretrained=False):
     return model
 
 
-def fcanet101(num_classes=1_000, pretrained=False):
+def fcanet101(num_classes=1000, pretrained=False):
     """Constructs a FcaNet-101 model.
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
