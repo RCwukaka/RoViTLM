@@ -4,18 +4,16 @@ import sys
 import torch.cuda
 import torch.distributed as dist
 import torch.multiprocessing as mp
-
-from INet.datasets.HUST import HUSTBearingDataset
-from INet.datasets.PBD import PaderbornBearingDataset
-from INet.datasets.TYUT import TYUTDataset
-from INet.datasets.WBD import WEBDDataset
-from INet.run import config
-from INet.training.loss.LRSADTLMLoss import LRSADTLMLoss
-from INet.training.output.analysis import getResult
+from RoViTLM.datasets.HUST import HUSTBearingDataset
+from RoViTLM.datasets.PBD import PaderbornBearingDataset
+from RoViTLM.datasets.WBD import WEBDDataset
+from RoViTLM.run import config
+from RoViTLM.training.loss.RoViTLMLoss import RoViTLMLoss
+from RoViTLM.training.output.analysis import getResult
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from torch.utils.data import Dataset, DataLoader
-from INet.training.Trainer import Trainer
+from RoViTLM.training.Trainer import Trainer
 
 from torch.utils.data.distributed import DistributedSampler
 
@@ -47,32 +45,13 @@ def run_ddp(rank, world_size, total_epochs, batch_size, lamda, mu, device):
 
             model = train_model['model']  # load your model
             optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
-            loss = LRSADTLMLoss(train_model['type'])
+            loss = RoViTLMLoss(train_model['type'])
 
             source_data = prepare_dataloader(source, batch_size)
             target_data = prepare_dataloader(target, batch_size)
             trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
                               lamda, mu, device)
             trainer.train(total_epochs)
-
-    # for task in config.transfer_task2:
-    #     # run model
-    #     source = TYUTDataset(mapdata=task['source'])
-    #     target = TYUTDataset(mapdata=task['target'])
-    #
-    #     datasetReset(source, target)
-    #
-    #     for train_model in config.getTrainMode(task['num_class']):
-    #
-    #         model = train_model['model']  # load your model
-    #         optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
-    #         loss = LRSADTLMLoss(train_model['type'])
-    #
-    #         source_data = prepare_dataloader(source, batch_size)
-    #         target_data = prepare_dataloader(target, batch_size)
-    #         trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
-    #                           lamda, mu, device)
-    #         trainer.train(total_epochs)
 
     for task in config.transfer_task3:
         # run model
@@ -84,8 +63,9 @@ def run_ddp(rank, world_size, total_epochs, batch_size, lamda, mu, device):
         for train_model in config.getTrainMode(task['num_class']):
 
             model = train_model['model']  # load your model
+
             optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
-            loss = LRSADTLMLoss(train_model['type'])
+            loss = RoViTLMLoss(train_model['type'])
 
             source_data = prepare_dataloader(source, batch_size)
             target_data = prepare_dataloader(target, batch_size)
@@ -93,27 +73,27 @@ def run_ddp(rank, world_size, total_epochs, batch_size, lamda, mu, device):
                               train_model['lamda'], train_model['mu'], device)
             trainer.train(total_epochs)
 
-    # for task in config.transfer_task4:
-    #     # run model
-    #     source = HUSTBearingDataset(mapdata=task['source'])
-    #     target = HUSTBearingDataset(mapdata=task['target'])
-    #
-    #     datasetReset(source, target)
-    #
-    #     for train_model in config.getTrainMode(task['num_class']):
-    #
-    #         model = train_model['model']  # load your model
-    #         optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
-    #         loss = LRSADTLMLoss(train_model['type'])
-    #
-    #         source_data = prepare_dataloader(source, batch_size)
-    #         target_data = prepare_dataloader(target, batch_size)
-    #         trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
-    #                           lamda, mu, device)
-    #         trainer.train(total_epochs)
+    for task in config.transfer_task4:
+        # run model
+        source = HUSTBearingDataset(mapdata=task['source'])
+        target = HUSTBearingDataset(mapdata=task['target'])
+
+        datasetReset(source, target)
+
+        for train_model in config.getTrainMode(task['num_class']):
+
+            model = train_model['model']  # load your model
+            optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
+            loss = RoViTLMLoss(train_model['type'])
+
+            source_data = prepare_dataloader(source, batch_size)
+            target_data = prepare_dataloader(target, batch_size)
+            trainer = Trainer(model, source_data, target_data, optimizer, loss, rank, train_model['name'], task['name'],
+                              lamda, mu, device)
+            trainer.train(total_epochs)
 
     cleanup_ddp()
-    # getResult()
+    getResult()
 
 
 def prepare_dataloader(dataset: Dataset, batch_size: int):
@@ -147,7 +127,7 @@ def run_training_entry():
                         help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 50')
     parser.add_argument('-world_size', type=int, required=False, default=1,
                         help='[OPTIONAL] Use this flag to specify the number of GPU. Default: 1')
-    parser.add_argument('--batch_size', type=int, required=False, default=100,
+    parser.add_argument('--batch_size', type=int, required=False, default=16,
                         help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 32')
     parser.add_argument('--lamda', type=int, required=False, default=1,
                         help='[OPTIONAL] Use this flag to specify a custom plans identifier. Default: 1')

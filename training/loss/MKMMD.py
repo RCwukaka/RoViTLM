@@ -2,7 +2,7 @@ from typing import Optional, Sequence
 import torch
 import torch.nn as nn
 
-from INet.training.loss.kernels import GaussianKernel
+from RoViTLM.training.loss.kernels import GaussianKernel
 
 
 class MKMMD(nn.Module):

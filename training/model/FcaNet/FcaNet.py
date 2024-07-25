@@ -3,7 +3,7 @@ from torchsummary import summary
 from torchvision import models
 from torchvision.models import ResNet
 
-from INet.training.model.FcaNet.layer import MultiSpectralAttentionLayer
+from RoViTLM.training.model.FcaNet.layer import MultiSpectralAttentionLayer
 
 
 def conv3x3(in_planes, out_planes, stride=1):

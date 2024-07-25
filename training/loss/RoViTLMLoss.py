@@ -1,16 +1,16 @@
 import torch.nn as nn
 
-from INet.training.loss.CORALLoss import CORALLoss
-from INet.training.loss.DomainLoss import DomainLoss
-from INet.training.loss.FaultLoss import FaultLoss
-from INet.training.loss.JMKMMD import JMKMMD
-from INet.training.loss.MKMMD import MKMMD
-from INet.training.loss.MMD import MMD
+from RoViTLM.training.loss.CORALLoss import CORALLoss
+from RoViTLM.training.loss.DomainLoss import DomainLoss
+from RoViTLM.training.loss.FaultLoss import FaultLoss
+from RoViTLM.training.loss.JMKMMD import JMKMMD
+from RoViTLM.training.loss.MKMMD import MKMMD
+from RoViTLM.training.loss.MMD import MMD
 
 
-class LRSADTLMLoss(nn.Module):
+class RoViTLMLoss(nn.Module):
     def __init__(self, type):
-        super(LRSADTLMLoss, self).__init__()
+        super(RoViTLMLoss, self).__init__()
         self.faultLoss = FaultLoss()
         self.domainLoss = DomainLoss()
         self.coralLoss = CORALLoss()

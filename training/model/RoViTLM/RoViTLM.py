@@ -3,10 +3,10 @@ from einops import rearrange
 from torch import nn
 from torch.autograd import Function
 
-from INet.training.model.LRSADTLM.DomainClassifier import DomainClassifier
-from INet.training.model.LRSADTLM.FaultClassifier import FaultClassifier
-from INet.training.model.LRSADTLM.LightweightNet import LightweightNet
-from INet.training.model.ViT.ViT import ViT
+from RoViTLM.training.model.RoViTLM.DomainClassifier import DomainClassifier
+from RoViTLM.training.model.RoViTLM.FaultClassifier import FaultClassifier
+from RoViTLM.training.model.RoViTLM.LightweightNet import LightweightNet
+from RoViTLM.training.model.ViT.ViT import ViT
 
 
 class ReverseLayerF(Function):
@@ -21,9 +21,9 @@ class ReverseLayerF(Function):
         return output, None
 
 
-class LRSADTLM(nn.Module):
+class RoViTLM(nn.Module):
     def __init__(self, net1=LightweightNet(), net2=ViT(), num_class=11):
-        super(LRSADTLM, self).__init__()
+        super(RoViTLM, self).__init__()
         self.layerResNet = net1
         self.SAMNet = net2
         self.grl = ReverseLayerF()

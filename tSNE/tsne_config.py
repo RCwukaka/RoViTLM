@@ -1,52 +1,52 @@
-from INet.datasets.HUSTBearingDataset.datasetInfo import getHUSTDiffWorkCondition
-from INet.datasets.PaderbornBearingDataset.datasetInfo import getPBDDiffWorkCondition
-from INet.datasets.TYUTDataSet.datasetInfo import getTYUTDiffWorkCondition
-from INet.datasets.WestBearingDataSet.datasetInfo import getWBDDiffWorkCondition
-from INet.training.model.CNN.CNN import CNN
-from INet.training.model.LRSADTLM.LRSADTLM import LRSADTLM
-from INet.training.model.LRSADTLM.LightweightNet import LightweightNet
-from INet.training.model.ResNet.ResNet import ResNet
-from INet.training.model.ResNet.BasicBlock import BasicBlock
-from INet.training.model.ViT.ViT import ViT
+from RoViTLM.datasets.HUSTBearingDataset.datasetInfo import getHUSTDiffWorkCondition
+from RoViTLM.datasets.PaderbornBearingDataset.datasetInfo import getPBDDiffWorkCondition
+from RoViTLM.datasets.TYUTDataSet.datasetInfo import getTYUTDiffWorkCondition
+from RoViTLM.datasets.WestBearingDataSet.datasetInfo import getWBDDiffWorkCondition
+from RoViTLM.training.model.CNN.CNN import CNN
+from RoViTLM.training.model.RoViTLM.RoViTLM import LRSADTLM
+from RoViTLM.training.model.RoViTLM.LightweightNet import LightweightNet
+from RoViTLM.training.model.ResNet.ResNet import ResNet
+from RoViTLM.training.model.ResNet.BasicBlock import BasicBlock
+from RoViTLM.training.model.ViT.ViT import ViT
 
 def getTrainMode(num_class):
     return [
-        # {'name': 'Resnet18_ViT', 'model': LRSADTLM(net1=ResNet(BasicBlock, [2, 2, 2, 2], num_classes=256),
+        # {'name': 'Resnet18_ViT', 'model_name': 'M1', 'model': RoViTLM(net1=ResNet(BasicBlock, [2, 2, 2, 2], num_classes=256),
         #                                        net2=ViT(),
         #                                        num_class=num_class), 'lamda': 1, 'mu': 1, 'type': 0},
-        {'name': 'Resnet34_ViT', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
+        {'name': 'Resnet34_ViT', 'model_name': 'M2', 'model': LRSADTLM(net1=ResNet(BasicBlock, [3, 4, 6, 3], num_classes=256),
                                                    net2=ViT(),
                                                    num_class=num_class), 'lamda': 1, 'mu': 1, 'type': 0},
-        # {'name': 'CNN', 'model': LRSADTLM(net1=CNN(),
+        # {'name': 'CNN', 'model_name': 'M0', 'model': RoViTLM(net1=CNN(),
         #                                    net2=CNN(),
         #                                    num_class=num_class), 'lamda': 1, 'mu': 1, 'type': 0},
-        # {'name': 'LRSADTLM1_0', 'model': LRSADTLM(net1=LightweightNet(),
-        #                                           net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256,
-        #                                                    depth=4),
-        #                                           num_class=num_class), 'lamda': 1, 'mu': 0, 'type': 0},
-        # {'name': 'LRSADTLM0_1', 'model': LRSADTLM(net1=LightweightNet(),
-        #                                           net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256,
-        #                                                    depth=4),
-        #                                           num_class=num_class), 'lamda': 0, 'mu': 1, 'type': 0},
-        # {'name': 'LRSADTLM1_1', 'model': LRSADTLM(net1=LightweightNet(),
-        #                                           net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256,
-        #                                                    depth=4),
-        #                                           num_class=num_class), 'lamda': 1, 'mu': 1, 'type': 0},
-        # {'name': 'LRSADTLM1_3', 'model': LRSADTLM(net1=LightweightNet(),
+        {'name': 'RoViTLM1_0', 'model_name': 'M7', 'model': LRSADTLM(net1=LightweightNet(),
+                                                  net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256,
+                                                           depth=4),
+                                                  num_class=num_class), 'lamda': 1, 'mu': 0, 'type': 0},
+        {'name': 'RoViTLM0_1', 'model_name': 'M6', 'model': LRSADTLM(net1=LightweightNet(),
+                                                  net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256,
+                                                           depth=4),
+                                                  num_class=num_class), 'lamda': 0, 'mu': 1, 'type': 0},
+        {'name': 'RoViTLM1_1', 'model_name': 'M9', 'model': LRSADTLM(net1=LightweightNet(),
+                                                  net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256,
+                                                           depth=4),
+                                                  num_class=num_class), 'lamda': 1, 'mu': 1, 'type': 0},
+        # {'name': 'RoViTLM1_3','model_name': 'M00', 'model': RoViTLM(net1=LightweightNet(),
         #                                        net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256, depth=4),
         #                                        num_class=num_class), 'lamda': 1, 'mu': 3, 'type': 0},
-        # {'name': 'LRSADTLM_CORAl', 'model': LRSADTLM(net1=LightweightNet(),
+        # {'name': 'RoViTLM_CORAl', 'model_name': 'M3', 'model': RoViTLM(net1=LightweightNet(),
         #                                        net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256, depth=4),
         #                                        num_class=num_class), 'lamda': 1, 'mu': 1, 'type': 1},
-        # {'name': 'LRSADTLM_JMKMMD', 'model': LRSADTLM(net1=LightweightNet(),
+        # {'name': 'RoViTLM_JMMD', 'model_name': 'M4', 'model': RoViTLM(net1=LightweightNet(),
         #                                              net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256,
         #                                                       depth=4),
         #                                              num_class=num_class), 'lamda': 1, 'mu': 1, 'type': 2},
-        # {'name': 'LRSADTLM_mmd', 'model': LRSADTLM(net1=LightweightNet(),
+        # {'name': 'RoViTLM_mmd', 'model_name': 'M5', 'model': RoViTLM(net1=LightweightNet(),
         #                                              net2=ViT(patch_size=(1, 64), img_size=(16, 64), num_classes=256,
         #                                                       depth=4),
         #                                              num_class=num_class), 'lamda': 1, 'mu': 1, 'type': 3},
-        # {'name': 'LRSADTLM_16', 'model': LRSADTLM(net1=LightweightNet(),
+        # {'name': 'RoViTLM_16', 'model_name': 'M8', 'model': RoViTLM(net1=LightweightNet(),
         #                                              net2=ViT(patch_size=(1, 16), img_size=(16, 16), num_classes=256,
         #                                                       depth=4),
         #                                              num_class=num_class), 'lamda': 1, 'mu': 1, 'type': 0},
@@ -61,30 +61,30 @@ data = {
 }
 
 transfer_task1 = [
-    {'name': 'W0_W1', 'source': data['WBD']['data'][0], 'target': data['WBD']['data'][1],
-     'num_class': data['WBD']['num_class']},
-    {'name': 'W0_W2', 'source': data['WBD']['data'][0], 'target': data['WBD']['data'][2],
-     'num_class': data['WBD']['num_class']},
-    {'name': 'W0_W3', 'source': data['WBD']['data'][0], 'target': data['WBD']['data'][3],
-     'num_class': data['WBD']['num_class']},
-    {'name': 'W1_W0', 'source': data['WBD']['data'][1], 'target': data['WBD']['data'][0],
-     'num_class': data['WBD']['num_class']},
-    {'name': 'W1_W2', 'source': data['WBD']['data'][1], 'target': data['WBD']['data'][2],
-     'num_class': data['WBD']['num_class']},
-    {'name': 'W1_W3', 'source': data['WBD']['data'][1], 'target': data['WBD']['data'][3],
-     'num_class': data['WBD']['num_class']},
-    {'name': 'W2_W0', 'source': data['WBD']['data'][2], 'target': data['WBD']['data'][0],
-     'num_class': data['WBD']['num_class']},
-    {'name': 'W2_W1', 'source': data['WBD']['data'][2], 'target': data['WBD']['data'][1],
-     'num_class': data['WBD']['num_class']},
+    # {'name': 'W0_W1', 'source': data['WBD']['data'][0], 'target': data['WBD']['data'][1],
+    #  'num_class': data['WBD']['num_class']},
+    # {'name': 'W0_W2', 'source': data['WBD']['data'][0], 'target': data['WBD']['data'][2],
+    #  'num_class': data['WBD']['num_class']},
+    # {'name': 'W0_W3', 'source': data['WBD']['data'][0], 'target': data['WBD']['data'][3],
+    #  'num_class': data['WBD']['num_class']},
+    # {'name': 'W1_W0', 'source': data['WBD']['data'][1], 'target': data['WBD']['data'][0],
+    #  'num_class': data['WBD']['num_class']},
+    # {'name': 'W1_W2', 'source': data['WBD']['data'][1], 'target': data['WBD']['data'][2],
+    #  'num_class': data['WBD']['num_class']},
+    # {'name': 'W1_W3', 'source': data['WBD']['data'][1], 'target': data['WBD']['data'][3],
+    #  'num_class': data['WBD']['num_class']},
+    # {'name': 'W2_W0', 'source': data['WBD']['data'][2], 'target': data['WBD']['data'][0],
+    #  'num_class': data['WBD']['num_class']},
+    # {'name': 'W2_W1', 'source': data['WBD']['data'][2], 'target': data['WBD']['data'][1],
+    #  'num_class': data['WBD']['num_class']},
     {'name': 'W2_W3', 'source': data['WBD']['data'][2], 'target': data['WBD']['data'][3],
      'num_class': data['WBD']['num_class']},
-    {'name': 'W3_W0', 'source': data['WBD']['data'][3], 'target': data['WBD']['data'][0],
-     'num_class': data['WBD']['num_class']},
-    {'name': 'W3_W1', 'source': data['WBD']['data'][3], 'target': data['WBD']['data'][1],
-     'num_class': data['WBD']['num_class']},
-    {'name': 'W3_W2', 'source': data['WBD']['data'][3], 'target': data['WBD']['data'][2],
-     'num_class': data['WBD']['num_class']},
+    # {'name': 'W3_W0', 'source': data['WBD']['data'][3], 'target': data['WBD']['data'][0],
+    #  'num_class': data['WBD']['num_class']},
+    # {'name': 'W3_W1', 'source': data['WBD']['data'][3], 'target': data['WBD']['data'][1],
+    #  'num_class': data['WBD']['num_class']},
+    # {'name': 'W3_W2', 'source': data['WBD']['data'][3], 'target': data['WBD']['data'][2],
+    #  'num_class': data['WBD']['num_class']},
 ]
 
 transfer_task2 = [
@@ -103,12 +103,12 @@ transfer_task2 = [
 ]
 
 transfer_task3 = [
-    {'name': 'P0_P1', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][1],
-     'num_class': data['PBD']['num_class']},
+    # {'name': 'P0_P1', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][1],
+    #  'num_class': data['PBD']['num_class']},
     # {'name': 'P0_P2', 'source': data['PBD']['data'][0], 'target': data['PBD']['data'][2],
     #  'num_class': data['PBD']['num_class']},
-    # {'name': 'P1_P0', 'source': data['PBD']['data'][1], 'target': data['PBD']['data'][0],
-    #  'num_class': data['PBD']['num_class']},
+    {'name': 'P1_P0', 'source': data['PBD']['data'][1], 'target': data['PBD']['data'][0],
+     'num_class': data['PBD']['num_class']},
     # {'name': 'P1_P2', 'source': data['PBD']['data'][1], 'target': data['PBD']['data'][2],
     #  'num_class': data['PBD']['num_class']},
     # {'name': 'P2_P0', 'source': data['PBD']['data'][2], 'target': data['PBD']['data'][0],

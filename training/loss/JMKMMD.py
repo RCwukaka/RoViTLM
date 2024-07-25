@@ -1,7 +1,7 @@
 from typing import Optional, Sequence
 import torch
 import torch.nn as nn
-from INet.training.loss.kernels import GaussianKernel
+from RoViTLM.training.loss.kernels import GaussianKernel
 
 # https://arxiv.org/abs/1605.06636
 

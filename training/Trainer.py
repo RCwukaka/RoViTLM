@@ -13,12 +13,12 @@ from datetime import datetime
 from time import time
 from tqdm import tqdm
 
-from INet.training.logger.net_logger import NetLogger
+from RoViTLM.training.logger.net_logger import NetLogger
 from torch import distributed as dist, autocast
 
-from INet.training.lr_scheduler.polylr import PolyLRScheduler
-from INet.utilities.collate_outputs import collate_outputs
-from INet.utilities.helpers import dummy_context, empty_cache
+from RoViTLM.training.lr_scheduler.polylr import PolyLRScheduler
+from RoViTLM.utilities.collate_outputs import collate_outputs
+from RoViTLM.utilities.helpers import dummy_context, empty_cache
 
 
 class Trainer:
